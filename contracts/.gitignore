@@ -1,0 +1,12 @@
+# compiler artifacts
+out/
+cache/
+
+# local anvil (chain 31337) smoke-test broadcasts — not a real deployment record.
+# Base Sepolia (84532) broadcasts are kept as the deployment record.
+broadcast/*/31337/
+
+# never
+.env
+.env.local
+*.key
