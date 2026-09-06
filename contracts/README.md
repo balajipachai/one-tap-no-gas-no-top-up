@@ -77,7 +77,7 @@ cast wallet import deployer --interactive
 
 # set these first (see below) — RPC and (optionally) an Etherscan-style key for verification
 export BASE_SEPOLIA_RPC_URL=...        # e.g. a Base Sepolia RPC endpoint
-export BASESCAN_API_KEY=...            # optional, only needed for --verify
+export ETHERSCAN_API_KEY=...            # optional, only needed for --verify
 
 forge script script/Deploy.s.sol:Deploy \
   --rpc-url base_sepolia --account deployer --sender <deployer address> \
@@ -96,8 +96,18 @@ deployer is also the intended owner) lists the cushion-cover item at $40.00. Opt
 Copy the two deployed addresses it prints into `../web/.env.local` as
 `NEXT_PUBLIC_TOKEN_ADDRESS` and `NEXT_PUBLIC_CHECKOUT_ADDRESS`.
 
-`foundry.toml` reads `BASE_SEPOLIA_RPC_URL` and `BASESCAN_API_KEY` from the environment via
+`foundry.toml` reads `BASE_SEPOLIA_RPC_URL` and `ETHERSCAN_API_KEY` from the environment via
 `${VAR}` interpolation — the tracked config file itself contains no secret or key.
+
+`--verify` goes through Etherscan's unified v2 API (`[etherscan] base_sepolia = { key = ...,
+chain = 84532 }`) — a plain Etherscan API key, not a Basescan-specific one; Etherscan's v1,
+per-block-explorer API keys are deprecated.
+
+## Deployed instance
+
+- **Network:** Base Sepolia (chain id 84532)
+- **TestUSD:** [`0x4ceb72ac86db98a44127e4d05faaf26a6907ff53`](https://sepolia.basescan.org/address/0x4ceb72ac86db98a44127e4d05faaf26a6907ff53) (verified)
+- **Checkout:** [`0x2187ef784d37f16fa49b55675f51c92cc1e0b815`](https://sepolia.basescan.org/address/0x2187ef784d37f16fa49b55675f51c92cc1e0b815) (verified)
 
 ## Repo hygiene
 
