@@ -1,0 +1,21 @@
+# deps
+/node_modules
+
+# next
+/.next/
+/out/
+
+# production
+/build
+
+# env
+.env*
+!.env.example
+
+# misc
+.DS_Store
+*.pem
+npm-debug.log*
+.vercel
+next-env.d.ts
+*.tsbuildinfo

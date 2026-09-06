@@ -1,0 +1,29 @@
+{
+  "name": "one-tap-no-gas-no-top-up-web",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@privy-io/react-auth": "3.40.0",
+    "next": "16.3.4",
+    "ox": "0.8.9",
+    "permissionless": "0.2.57",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "viem": "2.56.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "16.3.4",
+    "typescript": "^5.7.2"
+  }
+}
