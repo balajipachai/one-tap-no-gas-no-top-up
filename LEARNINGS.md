@@ -141,3 +141,36 @@ as a failure with a retry path, not a false positive.
   against the active chain in the Privy dashboard's Smart Wallets settings. This is good for
   key hygiene (nothing sensitive to ever leak from the frontend) but means "why isn't gas being
   sponsored" is never a code question first — it's a dashboard-configuration question.
+
+- **Enabling Smart Wallets globally is not the same as enabling it for a chain, and the gap
+  fails silently.** Toggling the feature on in the dashboard provisions nothing by itself —
+  the chain (Base Sepolia here) has to be added as a configured network under it. Skip that
+  and every signed-in user's `linkedAccounts` simply never gains a `type: "smart_wallet"`
+  entry; `useSmartWallets()`'s `client` stays `undefined` forever. Nothing in this app throws
+  or logs when that happens, because the code was written to treat "not yet provisioned" as a
+  normal transient state (see the gotcha above about `client` being undefined during a normal
+  loading window) — so a *permanently* missing smart wallet looks identical to a slow one: a
+  price that never resolves from "—", a balance stuck on "…", and a faucet button that quietly
+  does nothing when clicked, all with zero console output. The fix is a dashboard change, not
+  a code change — and confirming it worked requires signing out and back in, since Privy
+  provisions the smart account at login time; an already-cached session won't retroactively
+  gain one just because the dashboard config changed underneath it.
+
+- **Not every paymaster's dashboard is equally easy to actually reach.** Coinbase's CDP
+  Paymaster is free on Base Sepolia and is Base's own paymaster, which makes it the obvious
+  first choice — but its portal onboarding can dead-end behind an organization/KYB setup
+  redirect before the Paymaster → Configuration tab is even visible. Pimlico's signup has no
+  such gate, testnet sponsorship is free there too, and since Privy already defaults its
+  *bundler* to Pimlico's public endpoint when left blank, one Pimlico API key
+  (`https://api.pimlico.io/v2/84532/rpc?apikey=<KEY>`) conveniently covers both bundler and
+  paymaster from a single account. Worth trying before fighting a stuck onboarding flow.
+
+- **A "key" prop console warning from inside `PrivyProvider` isn't this app's bug.** Opening
+  the login modal logs `Each child in a list should have a unique "key" prop`, pointing at
+  wherever `<PrivyProvider>` is mounted (`app/providers.tsx` here) — but the list in question
+  is Privy's own internal render of detected injected wallet connectors (MetaMask, Brave
+  Wallet, etc. via EIP-6963), not anything this app renders. It's a
+  [known, open upstream issue](https://github.com/privy-io/examples/issues/135), present as of
+  the latest published `@privy-io/react-auth` (3.40.0) at the time of writing — cosmetic,
+  dev-mode only (React strips it in production builds), and not fixable from application
+  code.

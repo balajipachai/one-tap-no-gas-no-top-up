@@ -25,11 +25,27 @@ addresses, and a read RPC URL) — none of them are secrets. The bundler/paymast
 1. **Smart Wallets** (dashboard → your app → Smart Wallets): turn it on and pick an account
    implementation (Kernel, Safe, etc. — any of them satisfy this app; it only depends on the
    standard smart-wallet client interface, not on implementation-specific behavior).
-2. Under that same page, add **Base Sepolia** as a configured chain and set:
+2. Under that same page, **explicitly add Base Sepolia as a configured chain** — toggling
+   Smart Wallets on globally is not enough by itself. Skipping this step doesn't error; it
+   just means Privy never provisions a `smart_wallet` linked account for anyone who signs in,
+   so `Shop.tsx`'s price/balance/smart-account reads silently hang forever (they're gated on
+   `smartWalletAddress` existing) and the faucet/buy buttons silently no-op (`handleFaucet`/
+   `handleBuy` both bail out early when `smartWalletClient` is `undefined`) — no console error,
+   no visible failure, just a page that never finishes loading. Set, for that chain:
    - **Bundler URL** — defaults to Pimlico's public endpoint if left blank. Fine for a demo;
      set your own for anything beyond that.
    - **Paymaster URL** — this is what makes sponsorship actually happen. Leave it unset and
-     buyers will be asked to fund the smart account with Base Sepolia ETH instead.
+     buyers will be asked to fund the smart account with Base Sepolia ETH instead. The
+     quickest working option we found: a [Pimlico](https://dashboard.pimlico.io) API key —
+     gas sponsorship is free on testnets there — giving a URL of
+     `https://api.pimlico.io/v2/84532/rpc?apikey=<PIMLICO_API_KEY>` (`84532` is Base Sepolia's
+     chain id). Coinbase's CDP Paymaster is also free on Base Sepolia and is Base's own
+     paymaster, but its dashboard onboarding can get stuck behind an org/KYB setup redirect
+     before the Paymaster → Configuration tab is even reachable; Pimlico's signup has no such
+     gate, and it's already the bundler Privy defaults to, so one API key covers both.
+   - If you change this after someone has already signed in once, they need to **sign out and
+     back in** to pick it up — an existing session's cached user object won't gain a
+     `smart_wallet` account just from a page refresh; provisioning happens at login time.
 3. **Embedded Wallets** (dashboard → your app → Embedded Wallets): the app requests
    `createOnLogin: "users-without-wallets"` (see `app/providers.tsx`), so a signer wallet is
    created automatically on first login — that signer is what controls the smart account, it
@@ -89,3 +105,23 @@ needs a real Privy app id wired to a real Smart Wallets configuration, which onl
 you've done the dashboard setup above. `app/page.tsx` is marked `export const dynamic =
 "force-dynamic"` so a placeholder/missing app id doesn't fail a production build by trying to
 prerender the auth gate — see the comment there.
+
+## Verified end-to-end
+
+With a real Privy app id, Smart Wallets enabled for Base Sepolia, and a Pimlico paymaster URL
+configured as above, the full flow was driven in a real browser against the real deployed
+contracts and confirmed independently on Basescan, not just observed in the UI:
+
+- Sign-in provisioned a real smart account.
+- **Get test tUSDC** sent a sponsored faucet transaction; balance went `0.00 → 100.00 tUSDC`
+  with the smart account holding `0` Base Sepolia ETH throughout.
+- **Buy — one tap** produced a single Privy signing prompt covering both batched calls
+  (`approve` then `purchase`), both sponsored — one signature, one UserOperation. Balance went
+  `100.00 → 60.00 tUSDC`.
+- The resulting transaction, read back from Basescan directly (not from this app's own UI),
+  is tagged as an Account Abstraction bundle, status `Success`, with an ERC-20 `Transfer` of 40
+  tUSDC from the smart account to the payout address — and the raw L2 gas was paid by the
+  bundler's relayer address, not the buyer's smart account.
+- The UI's "Order confirmed" state only appeared after that same agreement (receipt landed
+  *and* `isOrderFilled` read back true) that `handleBuy` checks — see "How the checkout works"
+  above.
